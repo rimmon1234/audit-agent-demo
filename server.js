@@ -30,6 +30,7 @@ const upload = multer({
 });
 
 import { verifyPayment, getPaymentRequest } from "./payments/facinetPayment.js";
+import { build402Response } from "./payments/x402.js";
 import { audit } from "./agent/auditAgent.js";
 
 dotenv.config();
@@ -55,6 +56,33 @@ app.get("/", (req, res) => {
 
 /*
 ----------------------------------
+Payment Endpoint
+----------------------------------
+*/
+
+app.post("/pay", async (req, res) => {
+  try {
+    const { Facinet } = await import("facinet");
+
+    const facinet = new Facinet({
+      privateKey: process.env.PAYER_PRIVATE_KEY,
+      network: process.env.NETWORK || "base-sepolia"
+    });
+
+    const paymentResult = await facinet.pay({
+      amount: process.env.PAYMENT_AMOUNT || "1",
+      recipient: process.env.RECEIVING_WALLET
+    });
+    console.log("Payment completed\n");
+    res.json(paymentResult);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/*
+----------------------------------
 Audit endpoint
 ----------------------------------
 */
@@ -62,24 +90,48 @@ app.post("/audit", upload.single("contract"), async (req, res) => {
 
   try {
 
-    const txHash = req.body.txHash;
+    const paymentHeader = req.headers["x-payment"];
 
-    if (!txHash) {
-      return res.status(402).json({
-        error: "Payment required",
-        payment: getPaymentRequest()
-      });
+    console.log("--- /audit hit ---");
+    console.log("Payment header present:", !!paymentHeader);
+
+    if (!paymentHeader) {
+      const paymentRequest = getPaymentRequest();
+      return res
+        .status(402)
+        .header("Payment-Required", build402Response(paymentRequest))
+        .json({ error: "Payment required", code: 402 });
     }
 
-    const paid = await verifyPayment(txHash);
+    let paymentData;
+    try {
+      paymentData = JSON.parse(
+        Buffer.from(paymentHeader, "base64").toString("utf8")
+      );
+      console.log("Payment data decoded successfully");
+    } catch (e) {
+      console.log("Payment decode error:", e.message);
+      return res.status(402).json({ error: "Malformed payment header" });
+    }
+
+    const paid = await verifyPayment(paymentData);
+    console.log("Payment verified:", paid);
 
     if (!paid) {
-      return res.status(402).json({ error: "Invalid payment" });
+      return res.status(402).json({ error: "Invalid or unverified payment" });
+    }
+
+    console.log("File received:", req.file ? req.file.path : "NO FILE");
+
+    if (!req.file) {
+      return res.status(400).json({ error: "No contract file uploaded" });
     }
 
     const contractPath = req.file.path;
+    console.log("Running audit on:", contractPath);
 
     const report = await audit(contractPath);
+    console.log("Audit complete");
 
     res.json({
       success: true,
@@ -87,11 +139,10 @@ app.post("/audit", upload.single("contract"), async (req, res) => {
     });
 
   } catch (err) {
-
+    console.error("AUDIT ERROR:", err.message);
     res.status(500).json({
       error: err.message
     });
-
   }
 
 });

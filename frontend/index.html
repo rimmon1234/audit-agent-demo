@@ -11,7 +11,7 @@
 <body>
 
     <h2>AI Smart Contract Security Audit</h2>
-    <p>Cost: 0.001 Sepolia ETH</p>
+    <p>Cost: 1 USDC (gasless via Facinet)</p>
 
     <input type="file" id="contractFile" accept=".sol" />
     <br><br>
@@ -20,76 +20,86 @@
     <p id="status" class="status"></p>
     <pre id="result"></pre>
 
-    <script type="module">
-        import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.10.0/+esm";
+    <script>
+  const AUDIT_URL = "http://localhost:3000/audit";
+  const PAY_URL = "http://localhost:3000/pay";
 
-        const MERCHANT = "0x1105F7Fe688E78D5F9A1Bc1887323B8444dF6a0f";
-        const PRICE = "0.001";
-        const SEPOLIA_CHAIN_ID = "0xaa36a7"; // Chain ID 11155111 in Hex
+  async function runAudit() {
+    const fileInput = document.getElementById("contractFile");
+    const statusBox = document.getElementById("status");
+    const resultBox = document.getElementById("result");
+    const btn = document.getElementById("auditBtn");
 
-        async function runAudit() {
-            const fileInput = document.getElementById("contractFile");
-            const statusBox = document.getElementById("status");
-            const resultBox = document.getElementById("result");
-            const btn = document.getElementById("auditBtn");
+    if (!fileInput.files.length) return alert("Please select a .sol file");
 
-            if (!fileInput.files.length) return alert("Please select a .sol file");
-            
-            try {
-                if (!window.ethereum) throw new Error("MetaMask not found!");
-                
-                btn.disabled = true;
-                statusBox.textContent = "Connecting to Sepolia...";
+    try {
+      btn.disabled = true;
 
-                // 1. Force Switch to Sepolia
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: SEPOLIA_CHAIN_ID }],
-                });
+      // Step 1: Check if payment is required
+      statusBox.textContent = "Checking payment requirements...";
 
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-                
-                // 2. Pre-check Balance
-                const balance = await provider.getBalance(signer.address);
-                if (balance < ethers.parseEther(PRICE)) {
-                    throw new Error(`Insufficient Funds! You need 0.001 ETH + gas. Your balance: ${ethers.formatEther(balance)} ETH`);
-                }
+      const checkForm = new FormData();
+      checkForm.append("contract", fileInput.files[0]);
 
-                statusBox.textContent = "Confirm payment in MetaMask...";
-                const tx = await signer.sendTransaction({
-                    to: MERCHANT,
-                    value: ethers.parseEther(PRICE)
-                });
+      const checkRes = await fetch(AUDIT_URL, {
+        method: "POST",
+        body: checkForm
+      });
 
-                statusBox.textContent = "Waiting for block confirmation...";
-                await tx.wait(1); // Wait for 1 confirmation
+      if (checkRes.status === 402) {
 
-                statusBox.textContent = "Payment confirmed! Uploading for AI Audit...";
+        // Step 2: Trigger server-side payment via facinet
+        statusBox.textContent = "Processing gasless USDC payment...";
 
-                const formData = new FormData();
-                formData.append("contract", fileInput.files[0]);
-                formData.append("txHash", tx.hash);
+        const payRes = await fetch(PAY_URL, {
+          method: "POST"
+        });
 
-                const response = await fetch("http://localhost:8000/audit", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const data = await response.json();
-                resultBox.textContent = JSON.stringify(data, null, 2);
-                statusBox.textContent = "Audit Complete.";
-
-            } catch (err) {
-                console.error(err);
-                resultBox.textContent = "Error: " + (err.reason || err.message);
-                statusBox.textContent = "";
-            } finally {
-                btn.disabled = false;
-            }
+        if (!payRes.ok) {
+          const payErr = await payRes.json();
+          throw new Error("Payment failed: " + payErr.error);
         }
 
-        document.getElementById("auditBtn").addEventListener("click", runAudit);
-    </script>
+        const paymentResult = await payRes.json();
+
+        if (!paymentResult.success) {
+          throw new Error("Payment unsuccessful");
+        }
+
+        statusBox.textContent = "Payment confirmed! Running AI Audit...";
+
+        // Step 3: Retry audit with payment proof
+        const paymentProof = btoa(JSON.stringify(paymentResult));
+
+        const auditForm = new FormData();
+        auditForm.append("contract", fileInput.files[0]);
+
+        const auditRes = await fetch(AUDIT_URL, {
+          method: "POST",
+          headers: { "x-payment": paymentProof },
+          body: auditForm
+        });
+
+        const data = await auditRes.json();
+        resultBox.textContent = JSON.stringify(data, null, 2);
+        statusBox.textContent = "Audit Complete.";
+
+      } else {
+        const data = await checkRes.json();
+        resultBox.textContent = JSON.stringify(data, null, 2);
+        statusBox.textContent = "Audit Complete.";
+      }
+
+    } catch (err) {
+      console.error(err);
+      resultBox.textContent = "Error: " + err.message;
+      statusBox.textContent = "";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  document.getElementById("auditBtn").addEventListener("click", runAudit);
+</script>
 </body>
 </html>
