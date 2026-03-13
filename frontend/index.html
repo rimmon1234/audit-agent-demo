@@ -1,265 +1,338 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>AI Smart Contract Auditor</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; line-height: 1.6; background: #f8fafc; color: #1e293b; }
-    .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-    h2 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
-    #result { background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: 'Courier New', Courier, monospace; font-size: 14px; margin-top: 20px; max-height: 500px; overflow-y: auto; }
-    .status { color: #2563eb; font-weight: bold; margin-top: 10px; }
+    <title>AI Smart Contract Auditor</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; line-height: 1.6; background: #f8fafc; color: #1e293b; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        h2 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .price-info { background: #dbeafe; color: #1e40af; padding: 8px 15px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 20px; display: inline-block; }
+        #result { background: #1e293b; color: #f8fafc; padding: 20px; border-radius: 8px; white-space: pre-wrap; font-family: 'Courier New', Courier, monospace; font-size: 14px; margin-top: 20px; max-height: 500px; overflow-y: auto; }
+        .status { color: #2563eb; font-weight: bold; margin-top: 10px; }
 
-    button { background: #0052ff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
-    button:hover { background: #003db3; }
-    button:disabled { background: #94a3b8; cursor: not-allowed; }
+        button { background: #0052ff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        button:hover { background: #003db3; }
+        button:disabled { background: #94a3b8; cursor: not-allowed; }
 
-    .links { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .links a { padding: 10px 18px; background: #f1f5f9; color: #334155; border-radius: 6px; text-decoration: none; font-size: 14px; border: 1px solid #e2e8f0; transition: 0.2s; }
-    .links a:hover { background: #e2e8f0; }
+        .links { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .links a { padding: 10px 18px; background: #f1f5f9; color: #334155; border-radius: 6px; text-decoration: none; font-size: 14px; border: 1px solid #e2e8f0; transition: 0.2s; font-weight: bold; }
+        .links a:hover { background: #e2e8f0; }
 
-    #downloadSection { display: none; margin-top: 25px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; text-align: center; }
-    #downloadSection h3 { color: #166534; margin-top: 0; }
-    #downloadBtn { background: #10b981; }
-    #downloadBtn:hover { background: #059669; }
+        #downloadSection { display: none; margin-top: 25px; padding: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; text-align: center; }
+        #downloadSection h3 { color: #166534; margin-top: 0; }
+        #downloadBtn { background: #10b981; }
+        #downloadBtn:hover { background: #059669; }
 
-    select { padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 14px; color: #1e293b; background: white; cursor: pointer; }
-    select:focus { outline: none; border-color: #0052ff; }
+        select { padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 14px; color: #1e293b; background: white; cursor: pointer; }
+        select:focus { outline: none; border-color: #0052ff; }
 
-    .network-badge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
-    .badge-base { background: #dbeafe; color: #1d4ed8; }
-    .badge-fuji { background: #fee2e2; color: #dc2626; }
-  </style>
+        .network-badge { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+        .badge-base { background: #dbeafe; color: #1d4ed8; }
+        .badge-fuji { background: #fee2e2; color: #dc2626; }
+    </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>AI Smart Contract Security Audit</h2>
-  <p>Cost: <strong>1 USDC</strong> (Gasless via Facinet)</p>
+    <h2>AI Smart Contract Security Audit</h2>
+    <div class="price-info">Sponsored Mode: 0.50 USDC + 0.01/Line</div>
+    
+    <br>
+    <input type="file" id="contractFile" accept=".sol" />
+    <br><br>
 
-  <input type="file" id="contractFile" accept=".sol" />
-  <br><br>
+    <label for="network" style="font-weight: 600; margin-right: 8px;">Select Network:</label>
+    <select id="network">
+        <option value="base-sepolia">Base Sepolia</option>
+        <option value="avalanche-fuji">Avalanche Fuji</option>
+    </select>
+    <br><br>
 
-  <label for="network" style="font-weight: 600; margin-right: 8px;">Select Network:</label>
-  <select id="network">
-    <option value="base-sepolia">Base Sepolia</option>
-    <option value="avalanche-fuji">Avalanche Fuji</option>
-  </select>
-  <br><br>
+    <button id="auditBtn">Pay & Run Audit</button>
 
-  <button id="auditBtn">Pay & Run Audit</button>
+    <p id="status" class="status"></p>
 
-  <p id="status" class="status"></p>
+    <div id="downloadSection">
+        <h3>✅ Audit Ready</h3>
+        <button id="downloadBtn" style="background: #10b981;">Download PDF Report</button>
+    </div>
 
-  <div id="downloadSection">
-    <h3>✅ Your AI analysis is here!...</h3>
-    <button id="downloadBtn">Download PDF Report</button>
-  </div>
-
-  <div id="links" class="links"></div>
-  <pre id="result"></pre>
+    <div id="links" class="links"></div>
+    <pre id="result"></pre>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
-  const AUDIT_URL = "http://localhost:3000/audit";
-  const PAY_URL = "http://localhost:3000/pay";
+    const AUDIT_URL = "http://localhost:3000/audit";
+    const PAY_URL = "http://localhost:3000/pay";
 
-  let lastReportData = null;
+    let lastReportData = null;
 
-  async function runAudit() {
-    const fileInput = document.getElementById("contractFile");
-    const networkSelect = document.getElementById("network");
-    const statusBox = document.getElementById("status");
-    const resultBox = document.getElementById("result");
-    const linksBox = document.getElementById("links");
-    const downloadSection = document.getElementById("downloadSection");
-    const btn = document.getElementById("auditBtn");
+    async function runAudit() {
+        const fileInput = document.getElementById("contractFile");
+        const networkSelect = document.getElementById("network");
+        const statusBox = document.getElementById("status");
+        const resultBox = document.getElementById("result");
+        const linksBox = document.getElementById("links");
+        const downloadSection = document.getElementById("downloadSection");
+        const btn = document.getElementById("auditBtn");
 
-    const selectedNetwork = networkSelect.value;
+        const selectedNetwork = networkSelect.value;
 
-    if (!fileInput.files.length) return alert("Please select a .sol file");
+        if (!fileInput.files.length) return alert("Please select a .sol file");
 
-    linksBox.innerHTML = "";
-    resultBox.textContent = "";
-    downloadSection.style.display = "none";
+        linksBox.innerHTML = "";
+        resultBox.textContent = "";
+        downloadSection.style.display = "none";
 
-    try {
-      btn.disabled = true;
-      statusBox.textContent = "Checking payment requirements...";
+        try {
+            btn.disabled = true;
+            statusBox.textContent = "Calculating price...";
 
-      const checkForm = new FormData();
-      checkForm.append("contract", fileInput.files[0]);
+            const checkForm = new FormData();
+            checkForm.append("contract", fileInput.files[0]);
 
-      let res = await fetch(AUDIT_URL, {
-        method: "POST",
-        headers: { "x-network": selectedNetwork },
-        body: checkForm
-      });
+            let res = await fetch(AUDIT_URL, {
+                method: "POST",
+                headers: { "x-network": selectedNetwork },
+                body: checkForm
+            });
 
-      if (res.status === 402) {
-        statusBox.textContent = `Processing gasless USDC payment on ${selectedNetwork}...`;
+            if (res.status === 402) {
+                const quote = await res.json();
+                statusBox.textContent = `Sponsoring ${quote.amount} USDC on ${selectedNetwork}...`;
 
-        const payRes = await fetch(PAY_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ network: selectedNetwork })
+                const payRes = await fetch(PAY_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        amount: quote.amount,
+                        network: selectedNetwork 
+                    })
+                });
+
+                if (!payRes.ok) {
+                    const error = await payRes.json();
+                    throw new Error(error.error || "Payment failed");
+                }
+
+                const paymentResult = await payRes.json();
+                const paymentProof = btoa(JSON.stringify(paymentResult));
+
+                statusBox.textContent = "Payment confirmed! Running AI audit...";
+
+                const auditForm = new FormData();
+                auditForm.append("contract", fileInput.files[0]);
+
+                res = await fetch(AUDIT_URL, {
+                    method: "POST",
+                    headers: {
+                        "x-payment": paymentProof,
+                        "x-network": selectedNetwork
+                    },
+                    body: auditForm
+                });
+            }
+
+            if (!res.ok) throw new Error("Audit request failed.");
+
+            const data = await res.json();
+            lastReportData = data;
+
+            statusBox.textContent = `✅ Audit Complete! Stored on IPFS and ${selectedNetwork}.`;
+            downloadSection.style.display = "block";
+
+            if (data.ipfs?.url) addLink(linksBox, data.ipfs.url, "View on IPFS");
+
+            if (data.blockchain?.explorerUrl) {
+                const explorerLabel = selectedNetwork === "avalanche-fuji"
+                    ? "View on Snowtrace"
+                    : "View on Basescan";
+                addLink(linksBox, data.blockchain.explorerUrl, explorerLabel);
+            }
+
+            resultBox.textContent = data.report?.aiAnalysis || JSON.stringify(data, null, 2);
+
+        } catch (err) {
+            statusBox.textContent = "";
+            resultBox.textContent = "Error: " + err.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function addLink(box, url, text) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.textContent = text;
+        box.appendChild(a);
+    }
+
+    function generatePDF() {
+        if (!lastReportData || !lastReportData.report) return alert("No report data found!");
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const report = lastReportData.report;
+        const margin = 20;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        let y = 0;
+
+        const fileInput = document.getElementById("contractFile");
+        const fileName = fileInput.files[0]?.name || "contract.sol";
+        const cleanFileName = fileName.replace(".sol", "");
+        const network = lastReportData.network || document.getElementById("network").value;
+
+        // --- 1. PREMIUM BRANDED HEADER ---
+        doc.setFillColor(15, 23, 42); // Deep Navy
+        doc.rect(0, 0, pageWidth, 45, 'F');
+        
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(24);
+        doc.setTextColor(255, 255, 255);
+        doc.text("SECURITY AUDIT", margin, 25);
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(148, 163, 184); // Muted grey
+        doc.text("AI-POWERED SMART CONTRACT ANALYSIS", margin, 32);
+
+        // --- 2. METADATA SECTION ---
+        y = 55;
+        doc.setFontSize(9);
+        doc.setTextColor(71, 85, 105);
+        doc.setFont("helvetica", "bold");
+        doc.text("CONTRACT:", margin, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(fileName, margin + 25, y);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text("NETWORK:", margin, y + 5);
+        doc.setFont("helvetica", "normal");
+        doc.text(network.toUpperCase(), margin + 25, y + 5);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text("DATE:", margin + 100, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(new Date().toLocaleDateString(), margin + 115, y);
+
+        // Add IPFS & Blockchain info if available
+        if (lastReportData.ipfs?.cid) {
+            doc.setFont("helvetica", "bold");
+            doc.text("IPFS CID:", margin, y + 10);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.text(lastReportData.ipfs.cid, margin + 25, y + 10);
+            y += 5;
+        }
+        if (lastReportData.blockchain?.txHash) {
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.text("TX HASH:", margin, y + 10);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.text(lastReportData.blockchain.txHash.substring(0, 30) + "...", margin + 25, y + 10);
+        }
+
+        // --- 3. DYNAMIC RISK SHIELD & SCORE ---
+        y += 20;
+        const score = report.securityScore || 0;
+        let themeColor = [22, 163, 74]; // Green (Safe)
+        let riskLabel = "STABLE";
+
+        if (score < 80) { themeColor = [234, 179, 8]; riskLabel = "MEDIUM RISK"; }
+        if (score < 50) { themeColor = [220, 38, 38]; riskLabel = "CRITICAL RISK"; }
+
+        // Score Background Box
+        doc.setFillColor(248, 250, 252);
+        doc.setDrawColor(226, 232, 240);
+        doc.roundedRect(margin, y, pageWidth - (margin * 2), 35, 3, 3, 'FD');
+
+        // Score Text
+        doc.setFontSize(12);
+        doc.setTextColor(100);
+        doc.text("SECURITY SCORE", margin + 10, y + 12);
+        
+        doc.setFontSize(32);
+        doc.setTextColor(themeColor[0], themeColor[1], themeColor[2]);
+        doc.text(`${score}`, margin + 10, y + 25);
+        
+        doc.setFontSize(12);
+        doc.text("/ 100", margin + 32, y + 25);
+
+        // Risk Badge
+        doc.setFillColor(themeColor[0], themeColor[1], themeColor[2]);
+        doc.roundedRect(pageWidth - margin - 50, y + 10, 40, 15, 2, 2, 'F');
+        doc.setTextColor(255);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.text(riskLabel, pageWidth - margin - 46, y + 20, { align: 'left' });
+
+        // --- 4. EXECUTIVE SUMMARY ---
+        y += 50;
+        doc.setFontSize(14);
+        doc.setTextColor(15, 23, 42);
+        doc.text("EXECUTIVE SUMMARY", margin, y);
+        
+        doc.setDrawColor(themeColor[0], themeColor[1], themeColor[2]);
+        doc.setLineWidth(1);
+        doc.line(margin, y + 2, margin + 20, y + 2); // Decorative underline
+
+        y += 12;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(51, 65, 85);
+        
+        const summaryText = `This automated audit uses advanced AI patterns to detect vulnerabilities including Reentrancy, Integer Overflows, and Access Control flaws. Deployed on ${network}.`;
+        const splitSummary = doc.splitTextToSize(summaryText, pageWidth - (margin * 2));
+        doc.text(splitSummary, margin, y);
+
+        // --- 5. DETAILED AI ANALYSIS (MULTI-PAGE) ---
+        y += 15;
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(15, 23, 42);
+        doc.text("DETAILED ANALYSIS", margin, y);
+        y += 10;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(30);
+
+        const analysisText = report.aiAnalysis || "Full analysis report follows...";
+        const splitAnalysis = doc.splitTextToSize(analysisText, pageWidth - (margin * 2));
+
+        splitAnalysis.forEach(line => {
+            if (y > pageHeight - 25) {
+                addFooter(doc, pageWidth, pageHeight, fileName);
+                doc.addPage();
+                y = 25; // Reset for new page
+            }
+            doc.text(line, margin, y);
+            y += 6;
         });
 
-        if (!payRes.ok) throw new Error("Payment failed.");
+        // Final Footer for the last page
+        addFooter(doc, pageWidth, pageHeight, fileName);
 
-        const paymentResult = await payRes.json();
-        if (!paymentResult.success) throw new Error("Payment unsuccessful");
-
-        const paymentProof = btoa(JSON.stringify(paymentResult));
-
-        statusBox.textContent = "Payment confirmed! Running AI audit...";
-
-        const auditForm = new FormData();
-        auditForm.append("contract", fileInput.files[0]);
-
-        res = await fetch(AUDIT_URL, {
-          method: "POST",
-          headers: {
-            "x-payment": paymentProof,
-            "x-network": selectedNetwork
-          },
-          body: auditForm
-        });
-      }
-
-      if (!res.ok) throw new Error("Audit request failed.");
-
-      const data = await res.json();
-      lastReportData = data;
-
-      statusBox.textContent = `✅ Audit Complete! Stored on IPFS and ${selectedNetwork}.`;
-      downloadSection.style.display = "block";
-
-      if (data.ipfs?.url) addLink(linksBox, data.ipfs.url, "View on IPFS");
-
-      if (data.blockchain?.explorerUrl) {
-        const explorerLabel = selectedNetwork === "avalanche-fuji"
-          ? "View on Snowtrace"
-          : "View on Basescan";
-        addLink(linksBox, data.blockchain.explorerUrl, explorerLabel);
-      }
-
-      resultBox.textContent = JSON.stringify(data, null, 2);
-
-    } catch (err) {
-      statusBox.textContent = "";
-      resultBox.textContent = "Error: " + err.message;
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  function addLink(container, url, text) {
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.textContent = text;
-    container.appendChild(a);
-  }
-
-  function generatePDF() {
-    if (!lastReportData) return;
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const report = lastReportData.report;
-    const margin = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    let y = 20;
-
-    const fileInput = document.getElementById("contractFile");
-    const originalFullFileName = fileInput.files[0] ? fileInput.files[0].name : "Contract.sol";
-    const cleanFileName = originalFullFileName.replace(".sol", "");
-    const network = lastReportData.network || "base-sepolia";
-
-    // Header
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(22);
-    doc.setTextColor(0, 82, 255);
-    doc.text("Smart Contract Security Audit", margin, y);
-    y += 12;
-
-    // Metadata
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Target Contract: ${originalFullFileName}`, margin, y);
-    y += 6;
-    doc.text(`Network: ${network}`, margin, y);
-    y += 6;
-    doc.text(`Generated on: ${new Date().toLocaleString()}`, margin, y);
-    y += 6;
-
-    if (lastReportData.ipfs?.cid) {
-      doc.text(`IPFS CID: ${lastReportData.ipfs.cid}`, margin, y);
-      y += 6;
-    }
-    if (lastReportData.blockchain?.txHash) {
-      doc.text(`Tx Hash: ${lastReportData.blockchain.txHash}`, margin, y);
-      y += 6;
-    }
-    y += 8;
-
-    // Security Score
-    doc.setDrawColor(200);
-    doc.setFillColor(245, 248, 255);
-    doc.rect(margin, y, pageWidth - (margin * 2), 20, 'F');
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    const score = report.securityScore;
-    if (score >= 80) doc.setTextColor(22, 163, 74);
-    else if (score >= 50) doc.setTextColor(234, 179, 8);
-    else doc.setTextColor(220, 38, 38);
-
-    doc.text(`Security Score: ${score}/100`, margin + 5, y + 13);
-    y += 30;
-
-    // AI Analysis
-    doc.setFontSize(16);
-    doc.setTextColor(0, 82, 255);
-    doc.setFont("helvetica", "bold");
-    doc.text("AI Analysis Findings", margin, y);
-    y += 10;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(40);
-
-    const splitAnalysis = doc.splitTextToSize(report.aiAnalysis, pageWidth - (margin * 2));
-
-    splitAnalysis.forEach(line => {
-      if (y > pageHeight - 20) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.text(line, margin, y);
-      y += 7;
-    });
-
-    // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150);
-      doc.text(`Page ${i} of ${pageCount}`, pageWidth - 30, pageHeight - 10);
-      doc.text(`Audit Report for ${originalFullFileName}`, margin, pageHeight - 10);
+        // --- 6. SAVE ---
+        doc.save(`${cleanFileName}_Security_Audit_${network}.pdf`);
     }
 
-    doc.save(`${cleanFileName}_Security_Audit.pdf`);
-  }
+    // Helper for professional page numbers and footer
+    function addFooter(doc, pageWidth, pageHeight, fileName) {
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setTextColor(148, 163, 184);
+        doc.text(`AI Auditor Registry ID: ${Math.random().toString(36).substr(2, 9).toUpperCase()}`, 20, pageHeight - 10);
+        doc.text(`${fileName} - Page ${doc.internal.getCurrentPageInfo().pageNumber}`, pageWidth - 60, pageHeight - 10);
+    }
 
-  document.getElementById("auditBtn").addEventListener("click", runAudit);
-  document.getElementById("downloadBtn").addEventListener("click", generatePDF);
+    document.getElementById("auditBtn").addEventListener("click", runAudit);
+    document.getElementById("downloadBtn").addEventListener("click", generatePDF);
 </script>
-
 </body>
 </html>
