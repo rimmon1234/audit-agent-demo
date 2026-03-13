@@ -13,7 +13,7 @@ export async function uploadAuditToIPFS(contractPath, report, paymentInfo) {
       metadata: {
         contractName,
         timestamp: new Date().toISOString(),
-        network: process.env.NETWORK || "base-sepolia"
+        network: paymentInfo.network || "base-sepolia"
       },
       contractSource,
       auditReport: {
