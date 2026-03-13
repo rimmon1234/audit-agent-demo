@@ -9,17 +9,36 @@ const ABI = [
   "function getAudit(uint256 index) public view returns (address, string memory, uint256, string memory, uint256)"
 ];
 
-export async function storeAuditOnChain(contractName, securityScore, ipfsCid) {
+const NETWORK_CONFIG = {
+  "base-sepolia": {
+    rpc: process.env.BASE_SEPOLIA_RPC_URL,
+    contractAddress: process.env.AUDIT_REGISTRY_ADDRESS,
+    explorerUrl: "https://sepolia.basescan.org/tx"
+  },
+  "avalanche-fuji": {
+    rpc: process.env.FUJI_RPC_URL,
+    contractAddress: process.env.FUJI_REGISTRY_ADDRESS,
+    explorerUrl: "https://testnet.snowtrace.io/tx"
+  }
+};
+
+export async function storeAuditOnChain(contractName, securityScore, ipfsCid, network) {
   try {
-    const provider = new ethers.JsonRpcProvider(process.env.BASE_SEPOLIA_RPC_URL);
+    const config = NETWORK_CONFIG[network];
+
+    if (!config) {
+      throw new Error(`Unsupported network: ${network}`);
+    }
+
+    const provider = new ethers.JsonRpcProvider(config.rpc);
     const wallet = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, provider);
     const contract = new ethers.Contract(
-      process.env.AUDIT_REGISTRY_ADDRESS,
+      config.contractAddress,
       ABI,
       wallet
     );
 
-    console.log("Storing audit on chain...");
+    console.log(`Storing audit on chain (${network})...`);
 
     const tx = await contract.storeAudit(
       contractName,
@@ -32,7 +51,8 @@ export async function storeAuditOnChain(contractName, securityScore, ipfsCid) {
 
     return {
       txHash: receipt.hash,
-      blockNumber: receipt.blockNumber
+      blockNumber: receipt.blockNumber,
+      explorerUrl: `${config.explorerUrl}/${receipt.hash}`
     };
 
   } catch (err) {
